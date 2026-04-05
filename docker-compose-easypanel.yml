@@ -35,12 +35,6 @@ x-common-env: &common_env
   EMBEDDING_DIMENSIONS: 3072
   EMBEDDING_MAX_TOKENS: 8191
   EMBEDDING_BATCH_SIZE: 36
-  # If using BAML structured output these env variables will be used
-  BAML_LLM_PROVIDER: openai
-  BAML_LLM_MODEL: "gpt-5-mini"
-  BAML_LLM_ENDPOINT: ""
-  BAML_LLM_API_KEY: ${OPENAI_API_KEY}
-  BAML_LLM_API_VERSION: ""
   # =========================
   # Grafo (Neo4j)
   # =========================
