@@ -1,0 +1,29 @@
+{
+  "services": {
+    "api": {
+      "networks": {
+        "easypanel": {
+          "aliases": [
+            "cognee_app_api"
+          ]
+        },
+        "default": null
+      }
+    },
+    "cognee-mcp": {
+      "networks": {
+        "easypanel": {
+          "aliases": [
+            "cognee_app_cognee-mcp"
+          ]
+        },
+        "default": null
+      }
+    }
+  },
+  "networks": {
+    "easypanel": {
+      "external": true
+    }
+  }
+}
