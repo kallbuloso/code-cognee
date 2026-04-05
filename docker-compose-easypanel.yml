@@ -74,9 +74,9 @@ services:
   # --- Neo4j (grafo) ---
   neo4j:
     image: neo4j:latest
-    ports:
-      - 7474:7474
-      - 7687:7687
+    # ports:
+    #   - 7474:7474
+    #   - 7687:7687
     environment:
       - NEO4J_AUTH=neo4j/${DB_PASSWORD}
       - NEO4J_dbms_default__database=neo4j
