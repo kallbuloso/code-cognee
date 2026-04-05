@@ -1,0 +1,189 @@
+x-common-env: &common_env
+  ENV: ${ENV:-production}
+  ENVIRONMENT: ${ENV:-production}
+  # Postgres / pgvector
+  DB_PROVIDER: postgres
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_USERNAME: cognee
+  DB_PASSWORD: ${DB_PASSWORD}
+  DB_NAME: cognee_db
+
+  VECTOR_DB_PROVIDER: pgvector
+  VECTOR_DB_PORT: 5432
+  # API
+  COGNEE_API_PORT: ${COGNEE_API_PORT:-8000}
+  COGNEE_API_KEY: ${COGNEE_API_KEY}
+  ################################################################################
+  #  🧠 LLM Settings
+  ################################################################################
+  # Currently we support BAML and Instructor(using litellm) for structured outputs
+  STRUCTURED_OUTPUT_FRAMEWORK: "instructor" # options: "baml" or "instructor"
+  # LLM
+  LLM_API_KEY: ${OPENAI_API_KEY}
+  LLM_MODEL: "openai/gpt-5-mini"
+  LLM_PROVIDER: "openai"
+  LLM_ENDPOINT: ""
+  LLM_API_VERSION: ""
+  LLM_MAX_TOKENS: "16384"
+  # EMBEDDINGS
+  EMBEDDING_API_KEY: ${OPENAI_API_KEY}
+  EMBEDDING_PROVIDER: "openai"
+  EMBEDDING_MODEL: "openai/text-embedding-3-large"
+  EMBEDDING_ENDPOINT: ""
+  EMBEDDING_API_VERSION: ""
+  EMBEDDING_DIMENSIONS: 3072
+  EMBEDDING_MAX_TOKENS: 8191
+  EMBEDDING_BATCH_SIZE: 36
+  # If using BAML structured output these env variables will be used
+  BAML_LLM_PROVIDER: openai
+  BAML_LLM_MODEL: "gpt-5-mini"
+  BAML_LLM_ENDPOINT: ""
+  BAML_LLM_API_KEY: ${OPENAI_API_KEY}
+  BAML_LLM_API_VERSION: ""
+  # =========================
+  # Grafo (Neo4j)
+  # =========================
+  GRAPH_DATABASE_PROVIDER: "neo4j"
+  GRAPH_DATABASE_URL: "bolt://neo4j:7687"
+  GRAPH_DATABASE_NAME: "neo4j"
+  GRAPH_DATABASE_USERNAME: "neo4j"
+  GRAPH_DATABASE_PASSWORD: ${DB_PASSWORD}
+
+services:
+  # --- Banco vetorial + relacional (pg + pgvector) ---
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: cognee
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: cognee_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U cognee -d cognee_db -h localhost || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  # --- Neo4j (grafo) ---
+  neo4j:
+    image: neo4j:latest
+    # ports:
+    #   - 7474:7474
+    #   - 7687:7687
+    environment:
+      - NEO4J_AUTH=neo4j/${DB_PASSWORD}
+      - NEO4J_dbms_default__database=neo4j
+      - NEO4J_PLUGINS=["apoc","graph-data-science"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*,gds.*
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 1g
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cypher-shell -a bolt://localhost:7687 -u neo4j -p ${DB_PASSWORD} 'RETURN 1' | grep -q '1'",
+        ]
+      interval: 20s
+      timeout: 10s
+      retries: 30
+      start_period: 90s
+    restart: unless-stopped
+
+  # --- API principal (cognee) - build from source ---
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile # ajuste se o Dockerfile da API estiver noutro lugar
+    depends_on:
+      neo4j:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      # redis:
+      #   condition: service_healthy
+    environment:
+      <<: *common_env
+      DEBUG: false # Change to true if debugging
+      HOST: "0.0.0.0"
+      LOG_LEVEL: "ERROR"
+      PYTHONUNBUFFERED: "1"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SYSTEM_ROOT_DIRECTORY: /app/.cognee_system
+    command: >
+      sh -c "
+        ./entrypoint.sh || true &&
+        uvicorn cognee.api.main:app --host 0.0.0.0 --port ${COGNEE_API_PORT:-8000}
+      "
+    ports:
+      - "8800:8000"
+    volumes:
+      - api_data:${SYSTEM_ROOT_DIRECTORY:-/app/.cognee_system}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:${COGNEE_API_PORT:-8000}/health || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  # --- MCP Server (cognee-mcp) - build from source ---
+  cognee-mcp:
+    # image: cognee/cognee-mcp:main
+    build:
+      context: .
+      dockerfile: cognee-mcp/Dockerfile # ajuste se necessário
+    depends_on:
+      api:
+        condition: service_started
+      neo4j:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *common_env
+      TRANSPORT_MODE: "${MCP_TRANSPORT_MODE:-http}"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # Porta típica de MCP via WebSocket/stdio; se o projeto usar 8001/8899, ajuste
+      # MCP_HOST: "0.0.0.0"
+      MCP_PORT: "8001"
+      # Se o MCP falar com a API, informe a URL:
+      # COGNEE_API_BASE_URL: "http://api:8000"
+      # COGNEE_API_KEY: ${COGNEE_API_KEY}
+    ports:
+      - "8002:8001"
+    command: >
+      sh -c "
+        python -m cognee_mcp.server --host 0.0.0.0 --port 8001
+      "
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  neo4j_data: {}
+  neo4j_logs: {}
+  neo4j_import: {}
+  neo4j_plugins: {}
+  api_data: {}
