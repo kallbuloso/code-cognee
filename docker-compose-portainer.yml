@@ -167,10 +167,10 @@ services:
       # COGNEE_API_BASE_URL: "http://api:8000"
       # COGNEE_API_KEY: ${COGNEE_API_KEY}
     ports:
-      - "8002:8001"
+      - "8801:8000"
     command: >
       sh -c "
-        python -m cognee_mcp.server --host 0.0.0.0 --port 8001
+        python -m cognee_mcp.server --host 0.0.0.0 --port 8000
       "
     restart: unless-stopped
 
