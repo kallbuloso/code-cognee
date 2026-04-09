@@ -160,6 +160,7 @@ services:
       <<: *common_env
       TRANSPORT_MODE: "${MCP_TRANSPORT_MODE:-http}"
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      API_URL: "http://api:8000"
       # Porta típica de MCP via WebSocket/stdio; se o projeto usar 8001/8899, ajuste
       # MCP_HOST: "0.0.0.0"
       MCP_PORT: "8001"
