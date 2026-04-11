@@ -157,16 +157,31 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      <<: *common_env
-      TRANSPORT_MODE: "${MCP_TRANSPORT_MODE:-http}"
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      # API_URL: "http://api:8000"
-      # Porta típica de MCP via WebSocket/stdio; se o projeto usar 8001/8899, ajuste
-      # MCP_HOST: "0.0.0.0"
-      MCP_PORT: "8001"
-      # Se o MCP falar com a API, informe a URL:
-      # COGNEE_API_BASE_URL: "http://api:8000"
-      # COGNEE_API_KEY: ${COGNEE_API_KEY}
+      - DEBUG=false # Change to true if debugging
+      - LLM_API_KEY="${LLM_API_KEY}"
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - TRANSPORT_MODE="${MCP_TRANSPORT_MODE:-sse}"
+      # Database configuration - should match the main cognee service
+      - DB_PROVIDER=${DB_PROVIDER:-sqlite}
+      - DB_HOST=${DB_HOST:-host.docker.internal}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-cognee_db}
+      - DB_USERNAME=${DB_USERNAME:-cognee}
+      - DB_PASSWORD=${DB_PASSWORD:-cognee}
+      # MCP specific configuration
+      - MCP_LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1      
+      # <<: *common_env
+      # TRANSPORT_MODE: "${MCP_TRANSPORT_MODE:-http}"
+      # OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # # API_URL: "http://api:8000"
+      # # Porta típica de MCP via WebSocket/stdio; se o projeto usar 8001/8899, ajuste
+      # # MCP_HOST: "0.0.0.0"
+      # MCP_PORT: "8001"
+      # # Se o MCP falar com a API, informe a URL:
+      # # COGNEE_API_BASE_URL: "http://api:8000"
+      # # COGNEE_API_KEY: ${COGNEE_API_KEY}
     # ports:
     #   - "8001:8001"
     command: >
