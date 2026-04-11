@@ -158,10 +158,13 @@ services:
         condition: service_healthy
     environment:
       - DEBUG=false # Change to true if debugging
-      - LLM_API_KEY="${LLM_API_KEY}"
       - ENVIRONMENT=production
       - LOG_LEVEL=INFO
       - TRANSPORT_MODE="${MCP_TRANSPORT_MODE:-sse}"
+      - LLM_API_KEY=${OPENAI_API_KEY}
+      - LLM_MODEL="openai/gpt-5-mini"
+      - LLM_PROVIDER="openai"
+      - LLM_MAX_TOKENS="16384"
       # Database configuration - should match the main cognee service
       - DB_PROVIDER=postgres
       - DB_HOST=postgres
@@ -184,10 +187,7 @@ services:
       # # COGNEE_API_KEY: ${COGNEE_API_KEY}
     # ports:
     #   - "8001:8001"
-    command: >
-      sh -c "
-        python -m cognee_mcp.server --host 0.0.0.0 --port 8001
-      "
+    command: --no-migration
     restart: unless-stopped
 
 volumes:
