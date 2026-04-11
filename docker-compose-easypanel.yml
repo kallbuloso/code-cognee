@@ -163,12 +163,12 @@ services:
       - LOG_LEVEL=INFO
       - TRANSPORT_MODE="${MCP_TRANSPORT_MODE:-sse}"
       # Database configuration - should match the main cognee service
-      - DB_PROVIDER=${DB_PROVIDER:-sqlite}
-      - DB_HOST=${DB_HOST:-host.docker.internal}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_NAME=${DB_NAME:-cognee_db}
-      - DB_USERNAME=${DB_USERNAME:-cognee}
-      - DB_PASSWORD=${DB_PASSWORD:-cognee}
+      - DB_PROVIDER=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=cognee_db
+      - DB_USERNAME=cognee
+      - DB_PASSWORD=${DB_PASSWORD}
       # MCP specific configuration
       - MCP_LOG_LEVEL=INFO
       - PYTHONUNBUFFERED=1      
