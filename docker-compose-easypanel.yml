@@ -44,6 +44,8 @@ x-common-env: &common_env
   GRAPH_DATABASE_USERNAME: "neo4j"
   GRAPH_DATABASE_PASSWORD: ${DB_PASSWORD}
 
+  REQUIRE_AUTHENTICATION: "false"
+
 services:
   # --- Banco vetorial + relacional (pg + pgvector) ---
   postgres:
