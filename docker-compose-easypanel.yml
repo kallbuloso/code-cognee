@@ -43,6 +43,20 @@ x-common-env: &common_env
   GRAPH_DATABASE_NAME: "neo4j"
   GRAPH_DATABASE_USERNAME: "neo4j"
   GRAPH_DATABASE_PASSWORD: ${DB_PASSWORD}
+   
+  ################################################################################
+  #  Ontology Resolver
+  #  Use when grounding extraction against an OWL ontology.
+  ################################################################################
+
+  ONTOLOGY_RESOLVER: rdflib
+  MATCHING_STRATEGY: fuzzy
+  ONTOLOGY_FILE_PATH: /app/.cognee_ontology
+
+  MIGRATION_DB_USERNAME: cognee_db
+  MIGRATION_DB_PASSWORD: ${DB_PASSWORD}
+  MIGRATION_DB_HOST: postgres
+  MIGRATION_DB_PORT: 5432
 
   REQUIRE_AUTHENTICATION: "false"
 
